@@ -1,0 +1,203 @@
+<div class="row">
+	<div class="col-xs-12">
+		<div class="box">
+			<div class="box-header">
+				<h3 class="box-title">角色管理</h3>
+
+				<div class="box-tools">
+					<div class="input-group input-group-sm" style="width: 350px;">
+						<input type="text" name="table_search" id="searchNameId"
+							class="form-control pull-right" placeholder="角色名">
+
+						<div class="input-group-btn">
+							<button type="button" class="btn btn-default btn-search">
+                                <i class="fa fa-search"></i>
+							</button>
+							<button type="button" 
+							class="btn btn-default btn-delete">删除</button>
+							<button type="button" class="btn btn-default btn-add">添加</button>
+							<button type="button" class="btn btn-default btn-update">修改</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- /.box-header -->
+			<div class="box-body table-responsive no-padding">
+				<table class="table table-hover">
+					<thead>
+						<tr>
+							<th>ID</th>
+							<th>name</th>
+							<th>note</th>
+							<th>create date</th>
+							<th>modified date</th>
+							<th>create user</th>
+							<th>modified user</th>
+							<th>operator</th>
+						</tr>
+					</thead>
+					<tbody id="tbodyId">
+					</tbody>
+				</table>
+			</div>
+			<!-- /.box-body -->
+			<div id="pageId" class="box-footer clearfix">
+            </div>
+		</div>
+		<!-- /.box -->
+	</div>
+</div>
+<script type="text/javascript">
+$(function(){
+	//页面加载完成以后,加载分页信息
+    $("#pageId").load("pageUI.do")
+	//页面加载完成以后,异步加载角色信息
+	doGetObjects();
+	//$("").click(function(){})
+	$(".input-group-btn")
+	.on("click",".btn-delete",doDeleteObject)
+	.on("click",".btn-add,.btn-update",doLoadEditPage)
+	.on("click",".btn-search",doQueryObject);
+	
+});//when
+/**处理查询按钮的点击事件*/
+function doQueryObject(){
+	//重新初始化页码的值
+	$("#pageId").data("pageCurrent",1);
+	//执行查询操作
+	doGetObjects();
+}
+
+/*加载角色的编辑页面*/
+function doLoadEditPage(){
+   var title;
+   if($(this).hasClass("btn-add")){
+	   title="添加角色";
+   }else{
+	   title="修改角色";
+	   var ids=getCheckedIds();//数组
+	   if(ids.length!=1){
+		   alert("要选择一个");
+		   return;
+	   }
+	   console.log("ids="+ids);
+	   //绑定数据,目的是在编辑页面可以获取此值
+	   //因为修改时需要根据进行查询
+	   $(".container-fluid").data("id",ids[0]);
+   }
+   var url="role/editUI.do";
+   $(".container-fluid").load(url,function(){
+	    $(".box-title").html(title);
+   });	
+   //load函数异步加载新的内容,
+   //后续会替换原有位置内容
+}
+
+/*实现角色的删除操作*/
+function doDeleteObject(){
+	//1.获得选中的角色 id(不定项)
+	var checkedIds=getCheckedIds();
+	if(checkedIds.length==0){
+		alert("请选择一个");
+		return;
+	}
+	console.log("checkedIds="+checkedIds);
+	//2.将这些id值异步传输到服务端,执行删除动作
+	var url="role/doDeleteObject.do";
+	var params={"checkedIds":checkedIds.toString()}
+	$.post(url,params,function(result){
+		if(result.state==1){
+			alert(result.message);
+		    doGetObjects();
+		}else{
+			alert(result.message);
+		}
+	});
+}
+/*获取选中的角色列表中的记录id*/
+function getCheckedIds(){
+	var checkedIds=[];
+	//获取所有tbody中名字为checkedId的input元素
+    $("tbody input[name='checkedId']")
+	//迭代这些input元素
+	.each(function(){
+		//假如这个input的checked属性值为true
+		if($(this).prop("checked")){
+			checkedIds.push($(this).val())
+		}
+	});
+	//返回时将数组转换为字符串
+	return checkedIds;
+}
+
+function doGetObjects(){
+	var url="role/doFindPageObjects.do";
+	var pageCurrent=
+		$("#pageId").data("pageCurrent");
+	if(!pageCurrent)pageCurrent=1;
+	var params={"pageCurrent":pageCurrent};
+	//console.log($(this));
+	params.name=$("#searchNameId").val();
+	console.log(params);
+	$.getJSON(url,params,function(result){//JsonResult
+		if(result.state==1){
+		 //将服务端返回的数据添填充在表格中
+		 setTableTBodyRows(result.data.records);
+		 //设置分页信息
+		 setPagination(result.data);
+		}else{
+		  alert(result.message);
+		}
+	});
+}
+//4w(when,what,where,why)+h(how)
+function setTableTBodyRows(result){
+	//debugger;
+	console.log("setTableTBodyRows");
+	var tBody=$("#tbodyId");
+	//清空原有数据
+	tBody.empty();
+	//迭代结果集
+	for(var i in result){//循环一次取一行记录
+	  //构建tr对象
+	  var tr=$("<tr></tr>");
+	  //在tr对象上绑定一个id
+	  tr.data("id",result[i].id);
+	  //构建td对象
+	  var tds="<td><input type='checkbox' name='checkedId' value='"+result[i].id+"'/></td>"+
+	  "<td>"+result[i].name+"</td>"+
+	  "<td>"+result[i].note+"</td>"+
+	  "<td>"+result[i].createdTime+"</td>"+
+	  "<td>"+result[i].modifiedTime+"</td>"+
+	  "<td>"+result[i].createdUser+"</td>"+
+	  "<td>"+result[i].modifiedUser+"</td>"+
+	  "<td><button class='btn btn-primary' onClick='doDeleteRow(this)'>删除</button></td>";
+	  //将td追加到tr中
+	  tr.append(tds);
+	  //将tr追加到tbody中
+	  tBody.append(tr);
+	}
+}
+function doDeleteRow(obj){
+	//console.log($(obj));
+	var tr=$(obj).parent().parent();
+	var id=tr.data("id");
+	var url="role/doDeleteObject.do";
+	var params={"checkedIds":id};
+	$.post(url,params,function(result){
+		alert(result);
+		doGetObjects();
+	});
+}
+</script>
+
+
+
+
+
+
+
+
+
+
+

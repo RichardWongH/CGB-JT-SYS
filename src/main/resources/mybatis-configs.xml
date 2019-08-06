@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <settings>
+		<!-- mybatis控制台LOG输出 -->
+        <setting name="logImpl" value="log4j" />
+    </settings>
+    <typeAliases>
+        <package name="com.jt.sys.pojo"/>
+        <package name="com.jt.common.vo"/>
+    </typeAliases>
+    <mappers>
+       <mapper resource="mapper/sys/SysRoleMapper.xml"/>
+       <mapper resource="mapper/sys/SysUserMapper.xml"/>
+       <mapper resource="mapper/sys/SysUserRoleMapper.xml"/>
+         <mapper resource="mapper/sys/SysRoleMenuMapper.xml"/>
+       <mapper resource="mapper/sys/SysMenuMapper.xml"/>
+    </mappers>
+</configuration>

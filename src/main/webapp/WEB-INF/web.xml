@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://java.sun.com/xml/ns/javaee" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" version="2.5">
+  <display-name>CGB-JT-SYS-V1.03</display-name>
+  
+  <!--  配置dispatcherServlet-->
+  <servlet>
+    <servlet-name>dispatcherServlet</servlet-name>
+    <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+    <init-param>
+      <param-name>contextConfigLocation</param-name>
+      <param-value>classpath:spring-*.xml</param-value>
+    </init-param>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+   <!--为DispatcherServlet建立映射
+  把DispatcherServlet的URL映射为*.do 这样所有的以.do结尾的
+  请求都会被DispatcherServlet处理 --> 
+  <servlet-mapping>
+    <servlet-name>dispatcherServlet</servlet-name>
+    <url-pattern>*.do</url-pattern>
+  </servlet-mapping>
+	<filter>
+		<filter-name>DelegatingFilterProxy</filter-name>
+		<filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
+		<!-- 初始化参数 -->
+		<init-param>
+			<param-name>targetBeanName</param-name>
+			<param-value>shiroFilter</param-value>
+		</init-param>
+	</filter>
+	
+	<!-- Spring编码过滤器,解决POST提交方式乱码 -->
+<filter>
+	<filter-name>characterEncoding</filter-name>
+	<filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+	<init-param>
+		<param-name>encoding</param-name>
+		<param-value>UTF-8</param-value>
+	</init-param>
+</filter>
+<!--对所有请求起作用  -->
+	<filter-mapping>
+		<filter-name>DelegatingFilterProxy</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+	
+	 <!-- 由tomcat加载spring容器，加入Spring相关配置 
+  <context-param>
+　　<param-name>contextConfigLocation</param-name>
+　　<param-value>classpath:spring-*.xml</param-value>
+</context-param>
+<listener>
+　　<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+</listener>
+<filter>
+　　<description>字符集过滤器</description>
+　　<filter-name>encodingFilter</filter-name>
+　　<filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+　　<init-param>
+　　　　<description>字符集编码</description>
+　　　　<param-name>encoding</param-name>
+　　　　<param-value>UTF-8</param-value>
+　　</init-param>
+</filter>
+-->
+  
+</web-app>

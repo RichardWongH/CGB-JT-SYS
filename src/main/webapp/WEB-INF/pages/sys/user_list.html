@@ -1,0 +1,174 @@
+<div class="row">
+	<div class="col-xs-12">
+		<div class="box">
+			<div class="box-header">
+				<h3 class="box-title">用户管理</h3>
+
+				<div class="box-tools">
+					<div class="input-group input-group-sm" style="width: 350px;">
+						<input type="text" name="table_search" id="searchNameId"
+							class="form-control pull-right" placeholder="用户名">
+
+						<div class="input-group-btn">
+							<button type="button" class="btn btn-default btn-search">
+                                <i class="fa fa-search"></i>
+							</button>
+							<button type="button" class="btn btn-default btn-add">添加</button>
+							<button type="button" class="btn btn-default btn-update">修改</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- /.box-header -->
+			<div class="box-body table-responsive no-padding">
+				<table class="table table-hover">
+					<thead>
+						<tr>
+							<th>ID</th>
+							<th>用户名</th>
+							<th>邮箱</th>
+							<th>手机号</th>
+							<th>状态</th>
+							<th>创建时间</th>
+							<th>修改时间</th>
+							<th>操作</th>
+						</tr>
+					</thead>
+					<tbody id="tbodyId"></tbody>
+				</table>
+			</div>
+			<div id="pageId" class="box-footer clearfix">
+			</div>
+			<!-- /.box-body -->
+		</div>
+		<!-- /.box -->
+	</div>
+</div>
+<script type="text/javascript">
+$(function(){
+	$("#pageId").load("pageUI.do");//page.html
+	//页面加载完成以后,异步加载角色信息
+	doGetObjects();
+	$(".input-group-btn")
+	.on("click",".btn-add,.btn-update",doLoadEditPage)
+	.on("click",".btn-search",doQueryObject);
+});
+/**加载添加或编辑页面*/
+function doLoadEditPage(){
+	//1.获得点击对象上的class,根据class判定点击的对象
+	var title;
+	if($(this).hasClass("btn-add")){
+		title="添加用户";
+	}else if($(this).hasClass("btn-update")){
+		title="修改用户"
+		//获得选中的id
+		var id=getCheckedId();
+		console.log("id="+id)
+		//对获得的数据进行验证
+		if(!id){
+			alert("请先选择");
+			return;
+		}
+		//绑定数据(修改页面要使用此shuju)
+		$(".container-fluid")
+		.data("id",id)
+	}
+	//2.发异步请求加载页面
+	$(".container-fluid")
+	       .load("user/editUI.do",function(){
+		//修改页面标题
+		$(".box-title").html(title);
+	});
+}
+ /*获取选中的id值*/
+ function getCheckedId(){
+	 var checkedId;
+	 $("tbody input[name='checkedId']")
+	 .each(function(){
+		 if($(this).prop("checked")){
+			 checkedId=$(this).val();
+		 }
+	 });
+	 return checkedId;
+ }
+/**处理查询按钮的点击事件*/
+function doQueryObject(){
+	//重新初始化页码的值
+	$("#pageId").data("pageCurrent",1);
+	//执行查询操作
+	doGetObjects();
+}
+function doGetObjects(){
+	var url="user/doFindPageObjects.do";
+	var pageCurrent=
+		$("#pageId").data("pageCurrent");
+	if(!pageCurrent)pageCurrent=1;
+	var params={"pageCurrent":pageCurrent};
+	//console.log($(this));
+	params.username=$("#searchNameId").val();
+	console.log(params);
+	$.getJSON(url,params,function(result){//JsonResult
+		if(result.state==1){
+		 //将服务端返回的数据添填充在表格中
+		 setTableTBodyRows(result.data.records);
+		 //设置分页信息
+		 setPagination(result.data);
+		}else{
+		  alert(result.message);
+		}
+	});
+}
+//4w(when,what,where,why)+h(how)
+function setTableTBodyRows(result){
+	//debugger;
+	console.log("setTableTBodyRows");
+	var tBody=$("#tbodyId");
+	//清空原有数据
+	tBody.empty();
+	//迭代结果集
+	for(var i in result){//循环一次取一行记录
+	  //构建tr对象
+	  var tr=$("<tr></tr>");
+	  //在tr对象上绑定一个id
+	  tr.data("id",result[i].id);
+	  tr.data("valid",result[i].valid?0:1);
+	  //构建td对象
+	  var tds="<td><input type='radio' name='checkedId' value='"+result[i].id+"'/></td>"+
+	  "<td>"+result[i].username+"</td>"+
+	  "<td>"+result[i].email+"</td>"+
+	  "<td>"+result[i].mobile+"</td>"+
+	  "<td>"+(result[i].valid?"启用":"禁用")+"</td>"+
+	  "<td>"+result[i].createdTime+"</td>"+
+	  "<td>"+result[i].modifiedTime+"</td>"+
+	  "<td><button class='btn btn-defaultss' onClick='doValid(this)'>"+(result[i].valid?"禁用":"启用")+"</button></td>";
+	  //将td追加到tr中
+	  tr.append(tds);
+	  //将tr追加到tbody中
+	  tBody.append(tr);
+	}
+}
+/*在此函数中实现启用和禁用操作*/
+function doValid(obj){
+	//1.url
+	var url="user/doValidById.do";
+	//2.params
+	var id=$(obj).parents("tr").data("id");
+	var valid=$(obj).parents("tr").data("valid");
+	var params={"id":id,"valid":valid}
+	console.log(params);
+	//3.post
+	$.post(url,params,function(result){//4.callback
+		if(result.state==1){
+			alert(result.message);
+			doGetObjects();
+		}else{
+			alert(result.message);
+		}
+	});
+}
+</script>
+
+
+
+
+

@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans default-lazy-init="true"
+    xmlns="http://www.springframework.org/schema/beans" 
+    xmlns:p="http://www.springframework.org/schema/p"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:tx="http://www.springframework.org/schema/tx"
+    xmlns:aop="http://www.springframework.org/schema/aop" 
+    xmlns:mvc="http://www.springframework.org/schema/mvc"
+    xmlns:util="http://www.springframework.org/schema/util"
+    xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+    xsi:schemaLocation="  
+       http://www.springframework.org/schema/beans   
+       http://www.springframework.org/schema/beans/spring-beans-4.3.xsd  
+       http://www.springframework.org/schema/mvc   
+       http://www.springframework.org/schema/mvc/spring-mvc-4.3.xsd   
+       http://www.springframework.org/schema/tx   
+       http://www.springframework.org/schema/tx/spring-tx-4.3.xsd   
+       http://www.springframework.org/schema/aop 
+       http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
+       http://www.springframework.org/schema/util 
+       http://www.springframework.org/schema/util/spring-util-4.3.xsd
+       http://www.springframework.org/schema/data/jpa 
+       http://www.springframework.org/schema/data/jpa/spring-jpa-1.3.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context-4.3.xsd" > 
+
+    <!-- 自动扫描该包 -->
+    <context:component-scan base-package="com.jt" />
+    <!--启用MVC注解-->
+    <mvc:annotation-driven />
+    <!-- 定义跳转的文件的前后缀 ，视图模式配置 -->
+    <bean id="viewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <!-- 自动给后面action的方法return的字符串加上前缀和后缀，变成一个 可用的url地址 -->
+        <property name="prefix" value="/WEB-INF/pages/" />
+        <property name="suffix" value=".html"></property>
+    </bean>  
+    <!-- 配置DRUID连接池 -->
+    <util:properties id="cfg" location="classpath:config.properties"/>
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource"
+		destroy-method="close" init-method="init" lazy-init="true">
+		<property name="driverClassName" value="#{cfg.driver}" />
+		<property name="url" value="#{cfg.url}" />
+		<property name="username" value="#{cfg.username}" />
+		<property name="password" value="#{cfg.password}" />
+    </bean>
+    <!-- 整合mybatis配置sqlSessionFactory -->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+       <property name="dataSource" ref="dataSource"/>
+       <property name="configLocation" 
+                 value="classpath:mybatis-configs.xml"/>
+    </bean>
+    <!-- 配置mybatis接口映射对象的扫描 -->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage"
+		          value="com.jt.**.dao "/>
+	</bean>
+	<!-- shiro -->
+	 <bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+         <!-- shiro的核心安全接口 -->
+         <property name="securityManager" ref="securityManager"/>
+          <!-- 要求登录时的连接 -->
+        <property name="loginUrl" value="/loginUI.do"></property>
+         <!-- 登录成功后要跳转的连接(此处已经在登录中处理了) -->
+         <!-- <property name="successUrl" value="/index.jsp"></property> -->
+         <!-- 访问未对其授权的资源时,要跳转的连接 
+         <property name="unauthorizedUrl" value="/default.html"></property>-->
+         <!-- shiro连接约束配置 -->
+         <property name="filterChainDefinitions">
+             <value>
+                 <!-- 对静态资源设置允许匿名访问 -->
+                 /bower_components/** = anon
+                 /build/** = anon
+                 /dist/** = anon
+                 /plugins/** = anon
+                 /doLogin.do = anon
+                 <!-- 退出 -->
+                 /logout.do = logout  <!-- 会调用Subject的logout方法,此方法会将session清空 -->
+                 <!-- 剩余其他路径，必须认证通过才可以访问 -->
+                 /** = authc
+             </value>
+         </property>
+     </bean>
+     
+     <!-- 配置shiro安全管理器 -->
+     <bean id="securityManager" 
+           class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+         <property name="cacheManager" ref="cacheManager"/>
+         <property name="realm" ref="userRealm"></property>
+     </bean>
+     
+     <!-- 自定义Realm -->
+    <bean id="userRealm" class="com.jt.sys.service.realm.ShiroUserRealm">
+    	<!-- 配置凭证算法匹配器 -->
+    	<property name="credentialsMatcher">
+    		<bean class="org.apache.shiro.authc.credential.HashedCredentialsMatcher">
+    			<property name="hashAlgorithmName" value="MD5"/>
+    			<!-- <property name="hashIterations" value="1024"/> -->
+    		</bean>
+    	</property>
+    </bean>
+    
+    <bean id="cacheManager" class="org.apache.shiro.cache.ehcache.EhCacheManager">
+        <!-- Set a net.sf.ehcache.CacheManager instance here if you already have one.  If not, a new one
+             will be creaed with a default config:
+             <property name="cacheManager" ref="ehCacheManager"/> -->
+        <!-- If you don't have a pre-built net.sf.ehcache.CacheManager instance to inject, but you want
+             a specific Ehcache configuration to be used, specify that here.  If you don't, a default
+             will be used.: -->
+        <property name="cacheManagerConfigFile" value="classpath:ehcache.xml"/> 
+    </bean>
+
+	<!--Shiro生命周期处理器-->
+	<bean id="lifecycleBeanPostProcessor" class="org.apache.shiro.spring.LifecycleBeanPostProcessor"/>
+	
+	<!--启用shiro注解权限检查-->
+	<bean class="org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator"
+	    depends-on="lifecycleBeanPostProcessor"/>
+	<bean  class="org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor">
+	    <property name="securityManager" ref="securityManager"/>
+	</bean>
+	
+
+</beans>
+
+
+
+
+

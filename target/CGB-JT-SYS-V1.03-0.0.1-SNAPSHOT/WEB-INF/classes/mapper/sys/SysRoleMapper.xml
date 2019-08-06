@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jt.sys.dao.SysRoleDao">
+
+     <!-- 获取所有角色信息 -->
+     <select id="findObjects"
+             resultType="checkBox">
+          select id,name
+          from sys_roles
+     </select>
+ 
+     <update id="updateObject"
+             parameterType="sysRole">
+             
+           update sys_roles
+           set
+           name=#{name},
+           note=#{note},
+           modifiedTime=now(),
+           modifiedUser=#{modifiedUser}
+           where id=#{id}
+           
+     
+     </update>
+ 
+     <select id="findObjectById"
+             resultType="sysRole">
+           select *
+           from sys_roles
+           where id=#{id}     
+     </select>
+
+    <insert id="insertObject"
+            parameterType="sysRole"
+            useGeneratedKeys="true"
+            keyProperty="id">
+      
+      insert into sys_roles 
+       (id,name,note,createdTime,modifiedTime,
+        createdUser,modifiedUser)
+       values
+       (null,#{name},#{note},now(),now(),
+       #{createdUser},#{modifiedUser})
+     
+    </insert>
+
+    <sql id="whereSqlId">
+          <where>
+             <if test="name!=null and name!=''">
+                 name like concat("%",#{name},"%")
+             </if>
+          </where> 
+    </sql>
+    
+    <!-- 查询当前页记录 -->
+    <select id="findPageObjects"
+            resultType="sysRole">
+            select * 
+            from sys_roles
+            <include refid="whereSqlId"/>
+            order by createdTime desc
+            limit #{startIndex},#{pageSize}
+    </select>
+    
+    <!-- 统计记录数(要根据此记录数计算总页数) -->
+    <select id="getRowCount" resultType="int">
+        select count(*)
+        from sys_roles
+        <include refid="whereSqlId"/>
+    </select>
+    
+    
+    
+    
+    
+    <delete id="deleteObject">
+          delete from sys_roles
+          where id in 
+          <foreach collection="ids"
+                   open="(" 
+                   close=")" 
+                   separator=","
+                   item="item">
+                 ${item}
+          </foreach>
+    </delete>
+    <!-- 假如DAO接口中接收的数据不是数组
+                  而是"1,2,3"的字符串,可以采用如下
+                  方式实现删除,但是这样写存在SQL
+                  注入的风险-->
+    <!--  
+    <delete id="deleteObject">
+         delete from sys_roles
+         where id in ($(ids))
+    </delete>
+    -->
+    
+</mapper>
+
+
+
+
+
+
+
